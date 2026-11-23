@@ -189,6 +189,7 @@ fun MainScreen(
                     displayText = displayText,
                     isRunning = isRunning,
                     isDarkTheme = isDarkTheme,
+                    trafficStats = uiState.trafficStats,
                     onAction = onAction
                 )
             },

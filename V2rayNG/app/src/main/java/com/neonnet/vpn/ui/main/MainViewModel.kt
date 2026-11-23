@@ -82,7 +82,8 @@ class MainViewModel(
             selectedGroupId = dataSource.getSelectedSubscriptionId(),
             selectedGuid = dataSource.getSelectServer(),
             confirmRemove = dataSource.getConfirmRemove(),
-            doubleColumnDisplay = dataSource.getDoubleColumnDisplay()
+            doubleColumnDisplay = dataSource.getDoubleColumnDisplay(),
+            trafficStats = dataSource.trafficStats.value
         )
     )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -115,6 +116,11 @@ class MainViewModel(
     // ---------- Service events ----------
     init {
         collectServiceEvents()
+        viewModelScope.launch {
+            dataSource.trafficStats.collect { stats ->
+                _uiState.update { it.copy(trafficStats = stats) }
+            }
+        }
         setupGroupTab()
     }
 

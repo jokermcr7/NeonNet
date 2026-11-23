@@ -2,15 +2,18 @@ package com.neonnet.vpn.ui.main
 
 import com.neonnet.vpn.dto.SubscriptionUpdateResult
 import com.neonnet.vpn.dto.TestServiceMessage
+import com.neonnet.vpn.dto.TrafficStats
 import com.neonnet.vpn.dto.entities.ProfileItem
 import com.neonnet.vpn.dto.entities.ServerAffiliationInfo
 import com.neonnet.vpn.dto.entities.SubscriptionCache
 import com.neonnet.vpn.dto.entities.SubscriptionItem
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import java.io.Closeable
 
 interface MainDataSource : Closeable {
     val mainServiceEvent: Flow<MainServiceEvent>
+    val trafficStats: StateFlow<TrafficStats>
 
     fun getSelectedSubscriptionId(): String
     fun setSelectedSubscriptionId(id: String)

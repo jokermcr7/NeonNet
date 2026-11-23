@@ -26,7 +26,10 @@ import com.neonnet.vpn.helper.MessageHelper
 import com.neonnet.vpn.util.LogUtil
 import com.neonnet.vpn.util.Utils
 import kotlinx.coroutines.channels.Channel
+import com.neonnet.vpn.dto.TrafficStats
+import com.neonnet.vpn.handler.NotificationManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -43,6 +46,7 @@ class MainRepository(
     private val mainServiceEventChannel = Channel<MainServiceEvent>(Channel.UNLIMITED)
 
     override val mainServiceEvent: Flow<MainServiceEvent> = mainServiceEventChannel.receiveAsFlow()
+    override val trafficStats: StateFlow<TrafficStats> get() = NotificationManager.trafficStats
 
     private val serviceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {

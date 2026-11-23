@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.neonnet.vpn.AppConfig
 import com.neonnet.vpn.R
 import com.neonnet.vpn.core.CoreServiceManager
+import com.neonnet.vpn.dto.TrafficStats
 import com.neonnet.vpn.dto.entities.ProfileItem
 import com.neonnet.vpn.extension.delay
 import com.neonnet.vpn.extension.toSpeedString
@@ -24,6 +25,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.min
 
 object NotificationManager {
@@ -37,14 +41,24 @@ object NotificationManager {
     private var lastQueryTime = 0L
     private var mBuilder: NotificationCompat.Builder? = null
     private var speedNotificationJob: Job? = null
+    private val _trafficStats = MutableStateFlow(TrafficStats())
+    val trafficStats: StateFlow<TrafficStats> = _trafficStats.asStateFlow()
+    private var totalUploadBytes = 0L
+    private var totalDownloadBytes = 0L
     private var mNotificationManager: NotificationManager? = null
 
     /**
      * Starts the speed notification.
      * @param currentConfig The current profile configuration.
      */
+    fun resetTrafficStats() {
+        totalUploadBytes = 0L
+        totalDownloadBytes = 0L
+        _trafficStats.value = TrafficStats()
+        lastQueryTime = System.currentTimeMillis()
+    }
+
     fun startSpeedNotification() {
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) != true) return
         if (speedNotificationJob != null || CoreServiceManager.isRunning() == false) return
 
         var lastZeroSpeed = false
@@ -130,12 +144,17 @@ object NotificationManager {
      * Cancels the notification.
      */
     fun cancelNotification() {
+        speedNotificationJob?.cancel()
+        speedNotificationJob = null
+        _trafficStats.value = _trafficStats.value.copy(
+            uploadSpeed = 0L,
+            downloadSpeed = 0L
+        )
+
         val service = getService() ?: return
         service.stopForeground(Service.STOP_FOREGROUND_REMOVE)
 
         mBuilder = null
-        speedNotificationJob?.cancel()
-        speedNotificationJob = null
         mNotificationManager = null
     }
 
@@ -146,6 +165,12 @@ object NotificationManager {
         speedNotificationJob?.let {
             it.cancel()
             speedNotificationJob = null
+        }
+        _trafficStats.value = _trafficStats.value.copy(
+            uploadSpeed = 0L,
+            downloadSpeed = 0L
+        )
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) == true) {
             updateNotification("", 0, 0)
         }
     }
@@ -234,7 +259,6 @@ object NotificationManager {
         // If the query interval is too short, skip this round to avoid excessive CPU usage
         if (sinceLastQueryIn < QUERY_INTERVAL_MS) {
             LogUtil.w(AppConfig.TAG, "Query interval too short: ${sinceLastQueryIn}ms, skipping")
-            lastQueryTime = queryTime
             return lastZeroSpeed
         }
         val sinceLastQueryInSeconds = sinceLastQueryIn / 1000.0
@@ -265,8 +289,20 @@ object NotificationManager {
 
         val proxyTotal = proxyUplink + proxyDownlink
         val directTotal = directUplink + directDownlink
+
+        val uploadDelta = proxyUplink + directUplink
+        val downloadDelta = proxyDownlink + directDownlink
+        totalUploadBytes += uploadDelta
+        totalDownloadBytes += downloadDelta
+        _trafficStats.value = TrafficStats(
+            uploadSpeed = (uploadDelta / sinceLastQueryInSeconds).toLong(),
+            downloadSpeed = (downloadDelta / sinceLastQueryInSeconds).toLong(),
+            totalUpload = totalUploadBytes,
+            totalDownload = totalDownloadBytes
+        )
+
         val zeroSpeed = proxyTotal + directTotal == 0L
-        if (!zeroSpeed || !lastZeroSpeed) {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) == true && (!zeroSpeed || !lastZeroSpeed)) {
             val text = StringBuilder()
             appendSpeedString(
                 text, AppConfig.TAG_PROXY,

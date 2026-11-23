@@ -159,6 +159,10 @@ object CoreServiceManager {
             error("Core failed to start")
         }
 
+        if (!isReload) {
+            NotificationManager.resetTrafficStats()
+        }
+
         if (browserDialer != null) {
             browserDialer!!.stop()
             browserDialer = null

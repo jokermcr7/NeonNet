@@ -3,6 +3,7 @@ package com.neonnet.vpn.ui.main
 import com.neonnet.vpn.dto.ConnectionTestResult
 import com.neonnet.vpn.dto.GroupMapItem
 import com.neonnet.vpn.dto.LocateTarget
+import com.neonnet.vpn.dto.TrafficStats
 
 /** Locale-neutral state formatted only when it reaches the main UI. */
 sealed interface MainStatus {
@@ -21,6 +22,7 @@ data class MainUiState(
     val selectedGroupId: String = "",
     val selectedGuid: String? = null,
     val isRunning: Boolean = false,
+    val trafficStats: TrafficStats = TrafficStats(),
     val isTesting: Boolean = false,
     val status: MainStatus = MainStatus.Disconnected,
     val locateTarget: LocateTarget? = null,
