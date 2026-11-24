@@ -181,6 +181,7 @@ fun CyberIceDashboard(
     }
 }
 
+@Composable
 private fun CyberMetricCard(
     modifier: Modifier,
     title: String,
