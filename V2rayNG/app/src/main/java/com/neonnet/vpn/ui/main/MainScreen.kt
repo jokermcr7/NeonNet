@@ -165,7 +165,8 @@ fun MainScreen(
         Scaffold(
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
-                MainTopBar(
+                if (selectedPage == "servers") {
+                    MainTopBar(
                     isLoading = isLoading,
                     showSearch = showSearch,
                     searchQuery = searchQuery,
@@ -195,15 +196,16 @@ fun MainScreen(
                             MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
                         }
                     }
-                )
+                    )
+                }
             },
             floatingActionButton = {},
         ) { innerPadding ->
-            BackHandler(enabled = selectedPage == "servers") {
+            BackHandler(enabled = selectedPage != "home") {
                 selectedPage = "home"
             }
 
-            if (selectedPage == "home") {
+            if (selectedPage != "servers") {
                 CyberIceDashboard(
                     isRunning = isRunning,
                     statusText = displayText,
@@ -213,7 +215,11 @@ fun MainScreen(
                     onToggleConnection = { onAction(MainAction.ToggleService) },
                     onTestConnection = { onAction(MainAction.TestCurrentServer) },
                     onOpenServers = { selectedPage = "servers" },
+                    onOpenHome = { selectedPage = "home" },
+                    onOpenStatistics = { selectedPage = "stats" },
+                    onOpenProfile = { selectedPage = "profile" },
                     onOpenSettings = { onNavigate(MainDestination.Settings) },
+                    selectedPage = selectedPage,
                     onOpenMenu = { scope.launch { drawerState.open() } },
                     modifier = Modifier.fillMaxSize().padding(innerPadding)
                 )
