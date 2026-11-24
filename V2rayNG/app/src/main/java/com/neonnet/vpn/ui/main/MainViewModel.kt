@@ -91,6 +91,8 @@ class MainViewModel(
     // ---------- Keyword filtering ----------
     @Volatile
     private var keywordFilter: String = ""
+
+    private var currentPingTarget: Pair<String, String>? = null
     private var filterJob: Job? = null
 
     // ---------- Groups & cache ----------
@@ -153,7 +155,27 @@ class MainViewModel(
             MainServiceEvent.StateStopSuccess -> updateRunningState(false)
             is MainServiceEvent.MeasureDelayResult -> {
                 if (!uiState.value.isRunning || !testRequests.completeCurrent(event.requestId)) return
+                val target = currentPingTarget
+                currentPingTarget = null
                 _uiState.update { it.copy(isTesting = testRequests.isTesting, status = MainStatus.ConnectionTest(event.result)) }
+
+                target?.let { (guid, groupId) ->
+                    val updates = mapOf(guid to event.result.delayMillis)
+                    viewModelScope.launch(ioDispatcher) {
+                        dataSource.saveServerTestDelayMillis(guid, event.result.delayMillis)
+                        cacheMutex.withLock {
+                            groupDataCache[groupId]?.let { cached ->
+                                groupDataCache[groupId] = applyTestDelayResults(cached, updates)
+                            }
+                        }
+                        mutableServerGroupState(groupId).update { current ->
+                            current.copy(
+                                servers = applyTestDelayResults(current.servers, updates),
+                                rows = applyTestDelayResultsToRows(current.rows, updates),
+                            )
+                        }
+                    }
+                }
             }
 
             is MainServiceEvent.MeasureConfigSuccess -> {
@@ -179,7 +201,10 @@ class MainViewModel(
             }
 
             is MainServiceEvent.MeasureDelayCancelled -> {
-                if (testRequests.completeCurrent(event.requestId)) resetTestStatus()
+                if (testRequests.completeCurrent(event.requestId)) {
+                    currentPingTarget = null
+                    resetTestStatus()
+                }
             }
 
             is MainServiceEvent.MeasureConfigCancelled -> {
@@ -826,6 +851,7 @@ class MainViewModel(
         bulkTestJob = null
         testRequests.cancelBulk()
         testRequests.invalidateCurrent()
+        currentPingTarget = null
         cancelPendingTestResults()
         resetTestStatus()
         dataSource.cancelAllPing()
@@ -898,8 +924,12 @@ class MainViewModel(
     }
 
     fun testCurrentServerRealPing() {
-        if (!uiState.value.isRunning) return
+        val state = uiState.value
+        if (!state.isRunning) return
+        val guid = state.selectedGuid ?: return
+        val groupId = state.selectedGroupId
         val requestId = testRequests.beginCurrent()
+        currentPingTarget = guid to groupId
         _uiState.update { it.copy(isTesting = true, status = MainStatus.Testing) }
         dataSource.testCurrentServerRealPing(requestId)
     }
@@ -936,7 +966,10 @@ class MainViewModel(
 
     // ---------- Running state ----------
     private fun updateRunningState(running: Boolean, clearTestingText: Boolean = true) {
-        if (!running || clearTestingText) testRequests.invalidateCurrent()
+        if (!running || clearTestingText) {
+            testRequests.invalidateCurrent()
+            currentPingTarget = null
+        }
         _uiState.update { state ->
             state.copy(
                 isRunning = running,

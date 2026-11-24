@@ -1,5 +1,6 @@
 package com.neonnet.vpn.ui.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -198,88 +199,100 @@ fun MainScreen(
             },
             floatingActionButton = {},
         ) { innerPadding ->
-            CyberIceDashboard(
-                isRunning = isRunning,
-                statusText = displayText,
-                selectedProfile = selectedServer?.profile,
-                pingMillis = selectedServer?.testDelayMillis ?: 0L,
-                trafficStats = uiState.trafficStats,
-                onToggleConnection = { onAction(MainAction.ToggleService) },
-                onTestConnection = { onAction(MainAction.TestCurrentServer) },
-                onOpenServers = {},
-                onOpenSettings = { onNavigate(MainDestination.Settings) },
-                onOpenMenu = { scope.launch { drawerState.open() } },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                serverPanel = {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        if (groups.size > 1) {
-                            GroupTabBar(
-                                groups = groups,
-                                selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
-                                mainViewModel = mainViewModel,
-                                onTabClick = { targetIndex ->
-                                    scope.launch {
-                                        pagerState.navigateToPageOptimized(
-                                            targetPage = targetIndex,
-                                            animateAdjacentPage = true
-                                        )
-                                    }
+            BackHandler(enabled = selectedPage == "servers") {
+                selectedPage = "home"
+            }
+
+            if (selectedPage == "home") {
+                CyberIceDashboard(
+                    isRunning = isRunning,
+                    statusText = displayText,
+                    selectedProfile = selectedServer?.profile,
+                    pingMillis = selectedServer?.testDelayMillis ?: 0L,
+                    trafficStats = uiState.trafficStats,
+                    onToggleConnection = { onAction(MainAction.ToggleService) },
+                    onTestConnection = { onAction(MainAction.TestCurrentServer) },
+                    onOpenServers = { selectedPage = "servers" },
+                    onOpenSettings = { onNavigate(MainDestination.Settings) },
+                    onOpenMenu = { scope.launch { drawerState.open() } },
+                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                )
+            } else {
+                Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                    androidx.compose.material3.TextButton(
+                        onClick = { selectedPage = "home" }
+                    ) {
+                        Text("‹  HOME", color = Color(0xFF55DFFF))
+                    }
+
+                    if (groups.size > 1) {
+                        GroupTabBar(
+                            groups = groups,
+                            selectedTabIndex = pagerState.currentPage.coerceIn(0, groups.lastIndex),
+                            mainViewModel = mainViewModel,
+                            onTabClick = { targetIndex ->
+                                scope.launch {
+                                    pagerState.navigateToPageOptimized(
+                                        targetPage = targetIndex,
+                                        animateAdjacentPage = true
+                                    )
                                 }
+                            }
+                        )
+                    }
+
+                    if (groups.isNotEmpty()) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.weight(1f),
+                            userScrollEnabled = true,
+                            beyondViewportPageCount = 1,
+                            key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
+                        ) { page ->
+                            val group = groups.getOrNull(page) ?: return@HorizontalPager
+                            GroupPagerPage(
+                                groupId = group.id,
+                                mainViewModel = mainViewModel,
+                                selectedGuid = selectedGuid,
+                                locateTarget = uiState.locateTarget,
+                                doubleColumnDisplay = doubleColumnDisplay,
+                                searchQuery = searchQuery,
+                                lazyListStates = lazyListStates,
+                                lazyGridStates = lazyGridStates,
+                                onSelectServer = { guid ->
+                                    onAction(MainAction.SelectServer(guid))
+                                    selectedPage = "home"
+                                },
+                                onEditServer = { guid, profile ->
+                                    onAction(MainAction.EditServer(guid, profile))
+                                },
+                                onShareServer = { guid, profile ->
+                                    shareTarget = Triple(guid, profile, false)
+                                },
+                                onMoreServer = { guid, profile ->
+                                    shareTarget = Triple(guid, profile, true)
+                                },
+                                onRemoveServer = removeServer,
+                                usageInfo = group.usageInfo,
+                                groupTitle = group.remarks,
+                                onOpenLink = { url ->
+                                    onAction(MainAction.OpenSubscriptionLink(url))
+                                },
+                                contentPadding = PaddingValues(
+                                    start = 0.dp, top = 0.dp, end = 0.dp, bottom = 8.dp
+                                )
                             )
                         }
-
-                        if (groups.isNotEmpty()) {
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier.weight(1f),
-                                userScrollEnabled = true,
-                                beyondViewportPageCount = 1,
-                                key = { page -> groups.getOrNull(page)?.id ?: "group-page-$page" }
-                            ) { page ->
-                                val group = groups.getOrNull(page) ?: return@HorizontalPager
-
-                                GroupPagerPage(
-                                    groupId = group.id,
-                                    mainViewModel = mainViewModel,
-                                    selectedGuid = selectedGuid,
-                                    locateTarget = uiState.locateTarget,
-                                    doubleColumnDisplay = doubleColumnDisplay,
-                                    searchQuery = searchQuery,
-                                    lazyListStates = lazyListStates,
-                                    lazyGridStates = lazyGridStates,
-                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
-                                    onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
-                                    onShareServer = { guid, profile ->
-                                        shareTarget = Triple(guid, profile, false)
-                                    },
-                                    onMoreServer = { guid, profile ->
-                                        shareTarget = Triple(guid, profile, true)
-                                    },
-                                    onRemoveServer = removeServer,
-                                    usageInfo = group.usageInfo,
-                                    groupTitle = group.remarks,
-                                    onOpenLink = { url -> onAction(MainAction.OpenSubscriptionLink(url)) },
-                                    contentPadding = PaddingValues(
-                                        start = 0.dp,
-                                        top = 0.dp,
-                                        end = 0.dp,
-                                        bottom = 8.dp
-                                    )
-                                )
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier.weight(1f).fillMaxWidth(),
-                                contentAlignment = androidx.compose.ui.Alignment.Center
-                            ) {
-                                Text("No servers yet", color = Color.Gray)
-                            }
+                    } else {
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Text("No servers yet", color = Color.Gray)
                         }
                     }
                 }
-            )
+            }
         }
     }
 }

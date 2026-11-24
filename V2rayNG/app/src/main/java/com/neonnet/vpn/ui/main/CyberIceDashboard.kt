@@ -74,7 +74,6 @@ fun CyberIceDashboard(
     onOpenSettings: () -> Unit,
     onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
-    serverPanel: @Composable () -> Unit,
 ) {
     val (pulse, ringRotation) = if (isRunning) CyberEnergyMotion() else 1f to 0f
     val statusColor = if (isRunning) CyberGreen else CyberMuted
@@ -166,19 +165,13 @@ fun CyberIceDashboard(
         Spacer(Modifier.height(8.dp))
         CyberActionButton("TEST CONNECTION", CyberIce, Modifier.fillMaxWidth(), onTestConnection)
 
-        Row(
-            Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("SERVER NODES", color = CyberWhite, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp)
-            Spacer(Modifier.weight(1f))
-            Text(statusText, color = statusColor, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            serverPanel()
-        }
-    }
+        Spacer(Modifier.height(12.dp))
+        CyberActionButton(
+            "◈  SERVERS  ›",
+            CyberOrange,
+            Modifier.fillMaxWidth(),
+            onOpenServers
+        )
 }
 
 @Composable
