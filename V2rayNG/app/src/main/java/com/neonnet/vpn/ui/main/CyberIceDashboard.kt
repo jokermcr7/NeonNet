@@ -75,34 +75,11 @@ fun CyberIceDashboard(
     onOpenMenu: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    val energyTransition = rememberInfiniteTransition(label = "neon-energy-motion")
-    val pulse by energyTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (isRunning) 1.025f else 1f,
-        animationSpec = if (isRunning) {
-            infiniteRepeatable(
-                animation = tween(2600, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            )
-        } else {
-            tween(durationMillis = 0)
-        },
-        label = "connect-pulse"
-    )
-    val ringRotation by energyTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (isRunning) 360f else 0f,
-        animationSpec = if (isRunning) {
-            infiniteRepeatable(
-                animation = tween(4200, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            )
-        } else {
-            tween(durationMillis = 0)
-        },
-        label = "energy-ring-rotation"
-    )
-    val connectButtonScale = if (isRunning) pulse else 1f
+    val (pulse, ringRotation) = if (isRunning) {
+        CyberEnergyMotion()
+    } else {
+        1f to 0f
+    }
 
     val statusColor = if (isRunning) CyberGreen else CyberMuted
     val serverName = selectedProfile?.remarks?.takeIf { it.isNotBlank() } ?: "No server selected"
@@ -198,101 +175,31 @@ fun CyberIceDashboard(
             ) {
                 val center = Offset(size.width / 2f, size.height / 2f)
                 val radius = size.minDimension * 0.39f
-                val outerRadius = radius * 1.13f
-
-                // Soft orange energy halo
                 drawCircle(
-                    color = CyberOrange.copy(alpha = 0.075f),
-                    radius = outerRadius,
-                    center = center,
-                    style = Stroke(width = 12.dp.toPx())
-                )
-                drawCircle(
-                    color = CyberOrange.copy(alpha = 0.28f),
+                    brush = Brush.sweepGradient(listOf(CyberOrange, CyberIce, Color(0xFF17364A), CyberOrange)),
                     radius = radius,
                     center = center,
-                    style = Stroke(width = 5.dp.toPx())
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                 )
-
-                // Main neon ring
                 drawCircle(
-                    brush = Brush.sweepGradient(
-                        listOf(
-                            Color(0xFFFFC18C),
-                            CyberOrange,
-                            Color(0xFF8F3515),
-                            Color(0xFFFFA45E),
-                            CyberOrange
-                        )
-                    ),
-                    radius = radius,
-                    center = center,
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
-                )
-
-                // Inner icy accent
-                drawCircle(
-                    color = CyberIce.copy(alpha = 0.22f),
+                    color = CyberIce.copy(alpha = 0.16f),
                     radius = radius * 0.84f,
                     center = center,
                     style = Stroke(width = 1.dp.toPx())
                 )
-
-                // Outer energy track
                 drawCircle(
-                    color = CyberOrange.copy(alpha = 0.42f),
-                    radius = outerRadius,
+                    color = CyberOrange.copy(alpha = 0.18f),
+                    radius = radius * 1.13f,
                     center = center,
                     style = Stroke(width = 1.dp.toPx())
                 )
-
-                val arcTopLeft = Offset(
-                    center.x - outerRadius,
-                    center.y - outerRadius
-                )
-                val arcSize = androidx.compose.ui.geometry.Size(
-                    outerRadius * 2f,
-                    outerRadius * 2f
-                )
-
-                // Wide orange glow behind the moving energy arc
                 drawArc(
-                    color = CyberOrange.copy(alpha = 0.16f),
+                    brush = Brush.sweepGradient(listOf(CyberIce, CyberOrange, CyberIce)),
                     startAngle = ringRotation - 72f,
-                    sweepAngle = 112f,
+                    sweepAngle = 105f,
                     useCenter = false,
-                    topLeft = arcTopLeft,
-                    size = arcSize,
-                    style = Stroke(width = 13.dp.toPx(), cap = StrokeCap.Round)
-                )
-
-                // Bright rotating orange energy
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        listOf(
-                            Color.Transparent,
-                            CyberOrange.copy(alpha = 0.35f),
-                            Color(0xFFFFD0A1),
-                            Color(0xFFFF8A32),
-                            CyberOrange.copy(alpha = 0.1f)
-                        )
-                    ),
-                    startAngle = ringRotation - 72f,
-                    sweepAngle = 112f,
-                    useCenter = false,
-                    topLeft = arcTopLeft,
-                    size = arcSize,
-                    style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
-                )
-
-                // Thin icy-blue counter accent
-                drawArc(
-                    color = CyberIce.copy(alpha = 0.8f),
-                    startAngle = ringRotation + 145f,
-                    sweepAngle = 24f,
-                    useCenter = false,
-                    topLeft = arcTopLeft,
-                    size = arcSize,
+                    topLeft = Offset(center.x - radius * 1.13f, center.y - radius * 1.13f),
+                    size = androidx.compose.ui.geometry.Size(radius * 2.26f, radius * 2.26f),
                     style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                 )
             }
@@ -300,7 +207,7 @@ fun CyberIceDashboard(
                 modifier = Modifier
                     .fillMaxWidth(0.48f)
                     .aspectRatio(1f)
-                    .graphicsPulse(connectButtonScale)
+                    .graphicsPulse(pulse)
                     .shadow(22.dp, CircleShape, ambientColor = CyberOrange.copy(alpha = 0.35f), spotColor = CyberIce.copy(alpha = 0.3f))
                     .clip(CircleShape)
                     .background(
@@ -482,8 +389,56 @@ private fun CyberActionButton(
         modifier = modifier
             .height(48.dp)
             .clip(RoundedCornerShape(14.dp))
-  (selected) CyberOrange else CyberMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            .background(accent.copy(alpha = 0.09f))
+            .border(1.dp, accent.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.7.sp)
     }
+}
+
+@Composable
+private fun CyberNavItem(
+    icon: String,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(icon, color = if (selected) CyberOrange else CyberMuted, fontSize = 21.sp)
+        Text(label, color = if (selected) CyberOrange else CyberMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    }
+}
+
+@Composable
+private fun CyberEnergyMotion(): Pair<Float, Float> {
+    val transition = rememberInfiniteTransition(label = "neon-energy-motion")
+    val pulse by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.025f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "connect-pulse"
+    )
+    val rotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "energy-ring-rotation"
+    )
+    return pulse to rotation
 }
 
 private fun Modifier.graphicsPulse(scale: Float): Modifier =
