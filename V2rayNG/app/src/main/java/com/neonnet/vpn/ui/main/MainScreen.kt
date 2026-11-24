@@ -10,8 +10,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +50,12 @@ fun MainScreen(
     val isRunning = uiState.isRunning
     val displayText = mainViewModel.formatStatus(uiState.status)
     val selectedGuid = uiState.selectedGuid
+    var selectedPage by rememberSaveable { mutableStateOf("home") }
+    val selectedServersFlow = remember(mainViewModel, uiState.selectedGroupId) {
+        mainViewModel.serversForGroup(uiState.selectedGroupId)
+    }
+    val selectedServers by selectedServersFlow.collectAsStateWithLifecycle()
+    val selectedServer = selectedServers.firstOrNull { it.guid == selectedGuid }
     val doubleColumnDisplay = uiState.doubleColumnDisplay
     val confirmRemove = uiState.confirmRemove
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
@@ -152,6 +162,7 @@ fun MainScreen(
         Scaffold(
             contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
             topBar = {
+                if (selectedPage == "servers") {
                 MainTopBar(
                     isLoading = isLoading,
                     showSearch = showSearch,
@@ -183,21 +194,59 @@ fun MainScreen(
                         }
                     }
                 )
+                }
             },
             bottomBar = {
-                MainBottomBar(
+                if (selectedPage == "servers") {
+                    Column {
+                        NavigationBar(containerColor = Color(0xFF080B10)) {
+                            NavigationBarItem(
+                                selected = false,
+                                onClick = { selectedPage = "home" },
+                                icon = { Text("⌂") },
+                                label = { Text("HOME") }
+                            )
+                            NavigationBarItem(
+                                selected = true,
+                                onClick = { selectedPage = "servers" },
+                                icon = { Text("▤") },
+                                label = { Text("SERVERS") }
+                            )
+                            NavigationBarItem(
+                                selected = false,
+                                onClick = { onNavigate(MainDestination.Settings) },
+                                icon = { Text("⚙") },
+                                label = { Text("SETTINGS") }
+                            )
+                        }
+                        MainBottomBar(
                     displayText = displayText,
                     isRunning = isRunning,
                     isDarkTheme = isDarkTheme,
                     trafficStats = uiState.trafficStats,
                     onAction = onAction
-                )
+                        )
+                    }
+                }
             },
             floatingActionButton = {},
         ) { innerPadding ->
             val layoutDirection = LocalLayoutDirection.current
 
-            if (groups.isNotEmpty()) {
+            if (selectedPage == "home") {
+                CyberIceDashboard(
+                    isRunning = isRunning,
+                    statusText = displayText,
+                    selectedProfile = selectedServer?.profile,
+                    pingMillis = selectedServer?.testDelayMillis ?: 0L,
+                    trafficStats = uiState.trafficStats,
+                    onToggleConnection = { onAction(MainAction.ToggleService) },
+                    onTestConnection = { onAction(MainAction.TestCurrentServer) },
+                    onOpenServers = { selectedPage = "servers" },
+                    onOpenSettings = { onNavigate(MainDestination.Settings) },
+                    onOpenMenu = { scope.launch { drawerState.open() } }
+                )
+            } else if (groups.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
