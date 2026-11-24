@@ -51,7 +51,7 @@ import com.neonnet.vpn.dto.TrafficStats
 import com.neonnet.vpn.dto.entities.ProfileItem
 import java.util.Locale
 
-private val CyberBackground = Color(0xFF05070B)
+private val CyberBackground = Color(0xFF000000)
 private val CyberPanel = Color(0xFF0D121A)
 private val CyberPanelAlt = Color(0xFF111A24)
 private val CyberOrange = Color(0xFFFF8738)
@@ -73,14 +73,10 @@ fun CyberIceDashboard(
     onOpenServers: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenMenu: () -> Unit,
+    modifier: Modifier = Modifier,
+    serverPanel: @Composable () -> Unit,
 ) {
-    val scrollState = rememberScrollState()
-    val (pulse, ringRotation) = if (isRunning) {
-        CyberEnergyMotion()
-    } else {
-        1f to 0f
-    }
-
+    val (pulse, ringRotation) = if (isRunning) CyberEnergyMotion() else 1f to 0f
     val statusColor = if (isRunning) CyberGreen else CyberMuted
     val serverName = selectedProfile?.remarks?.takeIf { it.isNotBlank() } ?: "No server selected"
     val protocol = selectedProfile?.configType?.name?.replace('_', ' ') ?: "—"
@@ -89,219 +85,102 @@ fun CyberIceDashboard(
     } ?: "Select a server to begin"
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(CyberBackground)
-            .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 18.dp)
+        modifier = modifier.background(Color.Black).padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 18.dp, bottom = 22.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.linearGradient(listOf(CyberOrange, Color(0xFFB84D25), CyberIce))
-                    ),
+                Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
+                    .background(Brush.linearGradient(listOf(CyberOrange, Color(0xFFB84D25), CyberIce))),
                 contentAlignment = Alignment.Center
             ) {
-                Text("N", color = Color.Black, fontSize = 25.sp, fontWeight = FontWeight.Black)
+                Text("N", color = Color.Black, fontSize = 22.sp, fontWeight = FontWeight.Black)
             }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("NEON", color = CyberWhite, fontSize = 19.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                Text("CYBER ICE NETWORK", color = CyberMuted, fontSize = 9.sp, letterSpacing = 2.sp)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("NEON", color = CyberWhite, fontSize = 17.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                Text("CYBER ICE NETWORK", color = CyberMuted, fontSize = 8.sp, letterSpacing = 1.7.sp)
             }
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(CyberPanelAlt)
-                    .border(1.dp, Color(0xFF263544), CircleShape)
-                    .clickable(onClick = onOpenMenu),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("☰", color = CyberIce, fontSize = 20.sp)
-            }
+            Text(if (isRunning) "● ONLINE" else "● OFFLINE", color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text("⚙", color = CyberIce, fontSize = 19.sp, modifier = Modifier.clickable(onClick = onOpenSettings).padding(4.dp))
+            Text("☰", color = CyberIce, fontSize = 20.sp, modifier = Modifier.clickable(onClick = onOpenMenu).padding(4.dp))
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            Modifier.fillMaxWidth().height(154.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("SECURE CONNECTION", color = CyberMuted, fontSize = 10.sp, letterSpacing = 1.8.sp)
-                Text(
-                    if (isRunning) "YOU ARE PROTECTED" else "READY TO CONNECT",
-                    color = CyberWhite,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(30.dp))
-                    .background(statusColor.copy(alpha = 0.12f))
-                    .border(1.dp, statusColor.copy(alpha = 0.35f), RoundedCornerShape(30.dp))
-                    .padding(horizontal = 12.dp, vertical = 7.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(7.dp).clip(CircleShape).background(statusColor))
-                    Spacer(Modifier.width(7.dp))
-                    Text(if (isRunning) "ONLINE" else "OFFLINE", color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-        Text(statusText, color = CyberMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 14.dp, bottom = 18.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth(0.82f)
-                    .aspectRatio(1f)
-            ) {
-                val center = Offset(size.width / 2f, size.height / 2f)
-                val radius = size.minDimension * 0.39f
-                drawCircle(
-                    brush = Brush.sweepGradient(listOf(CyberOrange, CyberIce, Color(0xFF17364A), CyberOrange)),
-                    radius = radius,
-                    center = center,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                )
-                drawCircle(
-                    color = CyberIce.copy(alpha = 0.16f),
-                    radius = radius * 0.84f,
-                    center = center,
-                    style = Stroke(width = 1.dp.toPx())
-                )
-                drawCircle(
-                    color = CyberOrange.copy(alpha = 0.18f),
-                    radius = radius * 1.13f,
-                    center = center,
-                    style = Stroke(width = 1.dp.toPx())
-                )
-                drawArc(
-                    brush = Brush.sweepGradient(listOf(CyberIce, CyberOrange, CyberIce)),
-                    startAngle = ringRotation - 72f,
-                    sweepAngle = 105f,
-                    useCenter = false,
-                    topLeft = Offset(center.x - radius * 1.13f, center.y - radius * 1.13f),
-                    size = androidx.compose.ui.geometry.Size(radius * 2.26f, radius * 2.26f),
-                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.48f)
-                    .aspectRatio(1f)
-                    .graphicsPulse(pulse)
-                    .shadow(22.dp, CircleShape, ambientColor = CyberOrange.copy(alpha = 0.35f), spotColor = CyberIce.copy(alpha = 0.3f))
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFF202A35), Color(0xFF090D13), Color(0xFF18232E))
-                        )
+            Box(Modifier.size(150.dp), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val center = Offset(size.width / 2f, size.height / 2f)
+                    val radius = size.minDimension * 0.39f
+                    drawCircle(
+                        brush = Brush.sweepGradient(listOf(CyberOrange, CyberIce, Color(0xFF17364A), CyberOrange)),
+                        radius = radius, center = center,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                     )
-                    .border(2.dp, Brush.linearGradient(listOf(CyberOrange, CyberIce)), CircleShape)
-                    .clickable(onClick = onToggleConnection),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (isRunning) "Ⅱ" else "⏻", color = if (isRunning) CyberOrange else CyberIce, fontSize = 49.sp, fontWeight = FontWeight.Light)
-                    Text(if (isRunning) "DISCONNECT" else "CONNECT", color = CyberWhite, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
-                    Text("TAP TO ${if (isRunning) "STOP" else "START"}", color = CyberMuted, fontSize = 8.sp, letterSpacing = 1.sp)
+                    drawCircle(
+                        color = CyberIce.copy(alpha = 0.16f), radius = radius * 0.84f,
+                        center = center, style = Stroke(width = 1.dp.toPx())
+                    )
+                    drawArc(
+                        brush = Brush.sweepGradient(listOf(CyberIce, CyberOrange, CyberIce)),
+                        startAngle = ringRotation - 72f, sweepAngle = 105f, useCenter = false,
+                        topLeft = Offset(center.x - radius * 1.13f, center.y - radius * 1.13f),
+                        size = androidx.compose.ui.geometry.Size(radius * 2.26f, radius * 2.26f),
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+                    )
                 }
+                Box(
+                    Modifier.fillMaxSize(0.69f).graphicsPulse(pulse)
+                        .shadow(18.dp, CircleShape, ambientColor = CyberOrange.copy(alpha = 0.3f), spotColor = CyberIce.copy(alpha = 0.25f))
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Color(0xFF202A35), Color(0xFF090D13), Color(0xFF18232E))))
+                        .border(2.dp, Brush.linearGradient(listOf(CyberOrange, CyberIce)), CircleShape)
+                        .clickable(onClick = onToggleConnection),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (isRunning) "Ⅱ" else "⏻", color = if (isRunning) CyberOrange else CyberIce, fontSize = 39.sp)
+                        Text(if (isRunning) "DISCONNECT" else "CONNECT", color = CyberWhite, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                    }
+                }
+            }
+
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                CyberMetricCard(Modifier.fillMaxWidth(), "PING", if (pingMillis > 0L) "$pingMillis ms" else "—", CyberIce, "◉")
+                CyberMetricCard(Modifier.fillMaxWidth(), "PROTOCOL", protocol, CyberOrange, "⌘")
+                Text(serverName, color = CyberWhite, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(address, color = CyberMuted, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            CyberMetricCard(
-                modifier = Modifier.weight(1f),
-                title = "PING",
-                value = if (pingMillis > 0L) "$pingMillis ms" else "—",
-                accent = CyberIce,
-                icon = "◉"
-            )
-            CyberMetricCard(
-                modifier = Modifier.weight(1f),
-                title = "PROTOCOL",
-                value = protocol,
-                accent = CyberOrange,
-                icon = "⌘"
-            )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CyberTrafficCard(Modifier.weight(1f), "DOWNLOAD", formatCyberRate(trafficStats.downloadSpeed), formatCyberSize(trafficStats.totalDownload), CyberIce, "↓")
+            CyberTrafficCard(Modifier.weight(1f), "UPLOAD", formatCyberRate(trafficStats.uploadSpeed), formatCyberSize(trafficStats.totalUpload), CyberOrange, "↑")
         }
 
-        Spacer(Modifier.height(10.dp))
-        CyberServerCard(
-            name = serverName,
-            address = address,
-            onClick = onOpenServers
-        )
+        Spacer(Modifier.height(8.dp))
+        CyberActionButton("TEST CONNECTION", CyberIce, Modifier.fillMaxWidth(), onTestConnection)
 
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            CyberTrafficCard(
-                modifier = Modifier.weight(1f),
-                title = "DOWNLOAD",
-                speed = formatCyberRate(trafficStats.downloadSpeed),
-                total = formatCyberSize(trafficStats.totalDownload),
-                accent = CyberIce,
-                arrow = "↓"
-            )
-            CyberTrafficCard(
-                modifier = Modifier.weight(1f),
-                title = "UPLOAD",
-                speed = formatCyberRate(trafficStats.uploadSpeed),
-                total = formatCyberSize(trafficStats.totalUpload),
-                accent = CyberOrange,
-                arrow = "↑"
-            )
-        }
-
-        Spacer(Modifier.height(14.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            CyberActionButton("TEST CONNECTION", CyberIce, Modifier.weight(1f), onTestConnection)
-            CyberActionButton("SERVERS", CyberOrange, Modifier.weight(1f), onOpenServers)
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(CyberPanel)
-                .border(1.dp, Color(0xFF1C2B38), RoundedCornerShape(18.dp))
-                .padding(vertical = 13.dp, horizontal = 10.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CyberNavItem("⌂", "HOME", true) {}
-            CyberNavItem("▤", "SERVERS", false, onOpenServers)
-            CyberNavItem("⚙", "SETTINGS", false, onOpenSettings)
+            Text("SERVER NODES", color = CyberWhite, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp)
+            Spacer(Modifier.weight(1f))
+            Text(statusText, color = statusColor, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            serverPanel()
         }
     }
 }
 
-@Composable
 private fun CyberMetricCard(
     modifier: Modifier,
     title: String,
