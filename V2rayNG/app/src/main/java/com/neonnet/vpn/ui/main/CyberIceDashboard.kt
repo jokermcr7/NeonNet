@@ -173,6 +173,7 @@ fun CyberIceDashboard(
             onOpenServers
         )
 }
+    }
 
 @Composable
 private fun CyberMetricCard(
