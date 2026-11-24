@@ -330,34 +330,21 @@ class CoreVpnService : VpnService(), ServiceControl {
 
         RootLanSharing.stopClientSharing(this)
 
-        CoreServiceManager.stopCoreLoop()
+        CoreServiceManager.stopCoreLoop(onStopped = {
+            if (isForced) {
+                // Stop the service before closing the interface, after Core has fully stopped.
+                stopSelf()
 
-        if (isForced) {
-            //stopSelf has to be called ahead of mInterface.close(). otherwise v2ray core cannot be stooped
-            //It's strage but true.
-            //This can be verified by putting stopself() behind and call stopLoop and startLoop
-            //in a row for several times. You will find that later created v2ray core report port in use
-            //which means the first v2ray core somehow failed to stop and release the port.
-            stopSelf()
-
-            // Add a small delay to allow the async core stop operation to complete
-            // before closing the VPN interface, preventing a race condition that can
-            // leave the VPN icon in the status bar after stopping the service.
-            try {
-                Thread.sleep(100)
-            } catch (e: InterruptedException) {
-                LogUtil.w(AppConfig.TAG, "StartCore-VPN: Sleep interrupted", e)
-            }
-
-            try {
-                if (::mInterface.isInitialized) {
-                    mInterface.close()
-                    LogUtil.i(AppConfig.TAG, "StartCore-VPN: VPN interface closed")
+                try {
+                    if (::mInterface.isInitialized) {
+                        mInterface.close()
+                        LogUtil.i(AppConfig.TAG, "StartCore-VPN: VPN interface closed")
+                    }
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to close interface", e)
                 }
-            } catch (e: Exception) {
-                LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to close interface", e)
             }
-        }
+        })
     }
 
     fun tryLockStart(): Boolean {

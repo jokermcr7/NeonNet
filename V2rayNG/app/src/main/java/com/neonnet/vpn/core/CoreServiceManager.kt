@@ -193,7 +193,7 @@ object CoreServiceManager {
      * Unregisters broadcast receivers, stops notifications, and shuts down plugins.
      * @return True if the core was stopped successfully, false otherwise.
      */
-    fun stopCoreLoop(): Boolean {
+    fun stopCoreLoop(onStopped: (() -> Unit)? = null): Boolean {
         connectionTestScope.coroutineContext.cancelChildren()
         val service = getService() ?: return false
 
@@ -201,12 +201,20 @@ object CoreServiceManager {
         networkMonitor = null
         currentVpnInterface = null
 
-        if (isRunning()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (isRunning()) {
+                    NotificationManager.stopAndFlushTraffic()
                     coreController.stopLoop()
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to stop V2Ray loop", e)
+            } finally {
+                NotificationManager.cancelNotification()
+                try {
+                    onStopped?.invoke()
                 } catch (e: Exception) {
-                    LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to stop V2Ray loop", e)
+                    LogUtil.e(AppConfig.TAG, "StartCore-Manager: Stop completion callback failed", e)
                 }
             }
         }
@@ -219,8 +227,6 @@ object CoreServiceManager {
         }
 
         MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_STOP_SUCCESS, "")
-        NotificationManager.cancelNotification()
-
         try {
             service.unregisterReceiver(mMsgReceive)
         } catch (e: Exception) {
@@ -256,7 +262,7 @@ object CoreServiceManager {
      *
      * @return True if the core is running again.
      */
-    private fun reloadCore(): Boolean {
+    private suspend fun reloadCore(): Boolean {
         if (isReloading) return false
         val service = getService() ?: return false
         if (!isRunning()) return false
@@ -268,6 +274,7 @@ object CoreServiceManager {
             connectionTestScope.coroutineContext.cancelChildren()
             LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core reload start...")
 
+            NotificationManager.stopAndFlushTraffic()
             coreController.stopLoop()
             launchCore(service, tunFd, isReload = true)
 

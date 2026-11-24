@@ -25,6 +25,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +44,7 @@ object NotificationManager {
     private var lastQueryTime = 0L
     private var mBuilder: NotificationCompat.Builder? = null
     private var speedNotificationJob: Job? = null
+    private val trafficQueryMutex = Mutex()
     private val _trafficStats = MutableStateFlow(TrafficStats())
     val trafficStats: StateFlow<TrafficStats> = _trafficStats.asStateFlow()
     private var totalUploadBytes = 0L
@@ -69,6 +73,21 @@ object NotificationManager {
                 delay(QUERY_INTERVAL_MS)
             }
         }
+    }
+
+    suspend fun stopAndFlushTraffic() {
+        val job = speedNotificationJob
+        speedNotificationJob = null
+        job?.cancelAndJoin()
+
+        if (CoreServiceManager.isRunning()) {
+            updateSpeedNotificationOnce(lastZeroSpeed = true, force = true)
+        }
+
+        _trafficStats.value = _trafficStats.value.copy(
+            uploadSpeed = 0L,
+            downloadSpeed = 0L
+        )
     }
 
     /**
@@ -252,74 +271,77 @@ object NotificationManager {
      * @param lastZeroSpeed The previous zero speed state.
      * @return The current zero speed state.
      */
-    private fun updateSpeedNotificationOnce(lastZeroSpeed: Boolean): Boolean {
-        val queryTime = System.currentTimeMillis()
-        val sinceLastQueryIn = (queryTime - lastQueryTime)
+    private suspend fun updateSpeedNotificationOnce(
+        lastZeroSpeed: Boolean,
+        force: Boolean = false
+    ): Boolean = trafficQueryMutex.withLock {
+            val queryTime = System.currentTimeMillis()
+            val sinceLastQueryIn = (queryTime - lastQueryTime).coerceAtLeast(1L)
 
-        // If the query interval is too short, skip this round to avoid excessive CPU usage
-        if (sinceLastQueryIn < QUERY_INTERVAL_MS) {
-            LogUtil.w(AppConfig.TAG, "Query interval too short: ${sinceLastQueryIn}ms, skipping")
-            return lastZeroSpeed
-        }
-        val sinceLastQueryInSeconds = sinceLastQueryIn / 1000.0
+            // If the query interval is too short, skip this round to avoid excessive CPU usage
+            if (!force && sinceLastQueryIn < QUERY_INTERVAL_MS) {
+                LogUtil.w(AppConfig.TAG, "Query interval too short: ${sinceLastQueryIn}ms, skipping")
+                return@withLock lastZeroSpeed
+            }
+            val sinceLastQueryInSeconds = sinceLastQueryIn / 1000.0
 
-        var proxyUplink = 0L
-        var proxyDownlink = 0L
-        var directUplink = 0L
-        var directDownlink = 0L
+            var proxyUplink = 0L
+            var proxyDownlink = 0L
+            var directUplink = 0L
+            var directDownlink = 0L
 
-        CoreServiceManager.queryAllOutboundTrafficStats().forEach { stat ->
-            when {
-                stat.tag == AppConfig.TAG_DIRECT -> {
-                    when (stat.direction) {
-                        AppConfig.UPLINK -> directUplink += stat.value
-                        AppConfig.DOWNLINK -> directDownlink += stat.value
+            CoreServiceManager.queryAllOutboundTrafficStats().forEach { stat ->
+                when {
+                    stat.tag == AppConfig.TAG_DIRECT -> {
+                        when (stat.direction) {
+                            AppConfig.UPLINK -> directUplink += stat.value
+                            AppConfig.DOWNLINK -> directDownlink += stat.value
+                        }
                     }
-                }
 
-                // Accumulate stats for all proxy outbounds (including custom subscription tags)
-                stat.tag != AppConfig.TAG_BLOCKED -> {
-                    when (stat.direction) {
-                        AppConfig.UPLINK -> proxyUplink += stat.value
-                        AppConfig.DOWNLINK -> proxyDownlink += stat.value
+                    // Accumulate stats for all proxy outbounds (including custom subscription tags)
+                    stat.tag != AppConfig.TAG_BLOCKED -> {
+                        when (stat.direction) {
+                            AppConfig.UPLINK -> proxyUplink += stat.value
+                            AppConfig.DOWNLINK -> proxyDownlink += stat.value
+                        }
                     }
                 }
             }
-        }
 
-        val proxyTotal = proxyUplink + proxyDownlink
-        val directTotal = directUplink + directDownlink
+            val proxyTotal = proxyUplink + proxyDownlink
+            val directTotal = directUplink + directDownlink
 
-        val uploadDelta = proxyUplink + directUplink
-        val downloadDelta = proxyDownlink + directDownlink
-        totalUploadBytes += uploadDelta
-        totalDownloadBytes += downloadDelta
-        _trafficStats.value = TrafficStats(
-            uploadSpeed = (uploadDelta / sinceLastQueryInSeconds).toLong(),
-            downloadSpeed = (downloadDelta / sinceLastQueryInSeconds).toLong(),
-            totalUpload = totalUploadBytes,
-            totalDownload = totalDownloadBytes
-        )
-
-        val zeroSpeed = proxyTotal + directTotal == 0L
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) == true && (!zeroSpeed || !lastZeroSpeed)) {
-            val text = StringBuilder()
-            appendSpeedString(
-                text, AppConfig.TAG_PROXY,
-                proxyUplink / sinceLastQueryInSeconds,
-                proxyDownlink / sinceLastQueryInSeconds
+            val uploadDelta = proxyUplink + directUplink
+            val downloadDelta = proxyDownlink + directDownlink
+            totalUploadBytes += uploadDelta
+            totalDownloadBytes += downloadDelta
+            _trafficStats.value = TrafficStats(
+                uploadSpeed = (uploadDelta / sinceLastQueryInSeconds).toLong(),
+                downloadSpeed = (downloadDelta / sinceLastQueryInSeconds).toLong(),
+                totalUpload = totalUploadBytes,
+                totalDownload = totalDownloadBytes
             )
 
-            appendSpeedString(
-                text, AppConfig.TAG_DIRECT,
-                directUplink / sinceLastQueryInSeconds,
-                directDownlink / sinceLastQueryInSeconds
-            )
-            updateNotification(text.toString(), proxyTotal, directTotal)
+            val zeroSpeed = proxyTotal + directTotal == 0L
+            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) == true && (!zeroSpeed || !lastZeroSpeed)) {
+                val text = StringBuilder()
+                appendSpeedString(
+                    text, AppConfig.TAG_PROXY,
+                    proxyUplink / sinceLastQueryInSeconds,
+                    proxyDownlink / sinceLastQueryInSeconds
+                )
+
+                appendSpeedString(
+                    text, AppConfig.TAG_DIRECT,
+                    directUplink / sinceLastQueryInSeconds,
+                    directDownlink / sinceLastQueryInSeconds
+                )
+                updateNotification(text.toString(), proxyTotal, directTotal)
+            }
+            lastQueryTime = queryTime
+            zeroSpeed
         }
-        lastQueryTime = queryTime
-        return zeroSpeed
-    }
 
     /**
      * Gets the service instance.

@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 class NetworkMonitor(
     private val connectivity: ConnectivityManager,
     private val onUnderlyingNetworksChanged: (Array<Network>?) -> Unit,
-    private val onHandover: () -> Unit,
+    private val onHandover: suspend () -> Unit,
 ) {
     private companion object {
         const val HANDOVER_DEBOUNCE_MS = 1000L
