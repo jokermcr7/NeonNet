@@ -225,10 +225,21 @@ fun MainScreen(
                 )
             } else {
                 Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                    androidx.compose.material3.TextButton(
-                        onClick = { selectedPage = "home" }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 14.dp)
                     ) {
-                        Text("‹  HOME", color = Color(0xFF55DFFF))
+                        Text(
+                            "NEONNET",
+                            color = Color(0xFFFF7138),
+                            style = androidx.compose.material3.MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            "SECURE NODE NETWORK",
+                            color = Color(0xFF55DFFF),
+                            style = androidx.compose.material3.MaterialTheme.typography.labelSmall
+                        )
                     }
 
                     if (groups.size > 1) {
@@ -297,6 +308,13 @@ fun MainScreen(
                             Text("No servers yet", color = Color.Gray)
                         }
                     }
+                    CyberBottomNavigation(
+                        selectedPage = selectedPage,
+                        onOpenHome = { selectedPage = "home" },
+                        onOpenStatistics = { selectedPage = "stats" },
+                        onOpenServers = { selectedPage = "servers" },
+                        onOpenProfile = { selectedPage = "profile" }
+                    )
                 }
             }
         }

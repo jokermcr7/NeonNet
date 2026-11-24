@@ -102,10 +102,10 @@ fun AppTopBar(
             },
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                containerColor = Color(0xFF080D11),
+                titleContentColor = Color(0xFFF4F6F8),
+                navigationIconContentColor = Color(0xFF20D9FF),
+                actionIconContentColor = Color(0xFF20D9FF)
             )
         )
         AnimatedVisibility(

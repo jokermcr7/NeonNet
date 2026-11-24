@@ -48,7 +48,7 @@ import java.util.Locale
 private val CyberBackground = Color(0xFF030405)
 private val CyberPanel = Color(0xFF111315)
 private val CyberIce = Color(0xFF20D9FF)
-private val CyberGold = Color(0xFFFFC52E)
+private val CyberGold = Color(0xFFFF7138)
 private val CyberMuted = Color(0xFF9AA0A6)
 private val CyberWhite = Color(0xFFF4F6F8)
 
@@ -75,7 +75,7 @@ fun CyberIceDashboard(
     val serverAddress = selectedProfile?.server?.takeIf { it.isNotBlank() }?.let {
         if (selectedProfile.serverPort.isNullOrBlank()) it else "$it:${selectedProfile.serverPort}"
     } ?: "Choose a server to connect"
-    val statusColor = if (isRunning) CyberIce else CyberMuted
+    val statusColor = if (isRunning) CyberIce else CyberGold
 
     Column(
         modifier = modifier
@@ -95,7 +95,7 @@ fun CyberIceDashboard(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text("Status Connection", color = CyberMuted, fontSize = 10.sp)
+                Text("NEONNET  /  SECURE CORE", color = CyberIce, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                 Text(statusText, color = CyberWhite, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
             Text("⚙", color = CyberWhite, fontSize = 20.sp, modifier = Modifier.clickable(onClick = onOpenSettings).padding(horizontal = 8.dp, vertical = 5.dp))
@@ -103,18 +103,7 @@ fun CyberIceDashboard(
         }
 
         if (selectedPage == "home") {
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CyberTrafficCard(
-                    Modifier.weight(1f), "Download", formatCyberRate(trafficStats.downloadSpeed),
-                    formatCyberSize(trafficStats.totalDownload), CyberIce, "↓"
-                )
-                CyberTrafficCard(
-                    Modifier.weight(1f), "Upload", formatCyberRate(trafficStats.uploadSpeed),
-                    formatCyberSize(trafficStats.totalUpload), CyberGold, "↑"
-                )
-            }
-
+            Spacer(Modifier.height(4.dp))
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize()) {
                     val center = Offset(size.width / 2f, size.height / 2f)
@@ -122,7 +111,7 @@ fun CyberIceDashboard(
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = if (isRunning) listOf(CyberIce.copy(alpha = 0.34f), CyberIce.copy(alpha = 0.10f), Color.Transparent)
-                            else listOf(Color.White.copy(alpha = 0.23f), Color.White.copy(alpha = 0.07f), Color.Transparent),
+                            else listOf(CyberGold.copy(alpha = 0.28f), CyberGold.copy(alpha = 0.08f), Color.Transparent),
                             center = center,
                             radius = maxRadius
                         ),
@@ -132,14 +121,14 @@ fun CyberIceDashboard(
                     for (i in 1..34) {
                         val radius = maxRadius * (0.30f + i * 0.019f)
                         drawCircle(
-                            color = (if (isRunning) CyberIce else Color.White).copy(alpha = (0.19f - i * 0.0042f).coerceAtLeast(0.018f)),
+                            color = (if (isRunning) CyberIce else CyberGold).copy(alpha = (0.19f - i * 0.0042f).coerceAtLeast(0.018f)),
                             radius = radius,
                             center = center,
                             style = Stroke(width = if (i % 4 == 0) 1.35.dp.toPx() else 0.55.dp.toPx())
                         )
                     }
                     drawCircle(
-                        color = if (isRunning) CyberIce.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.58f),
+                        color = if (isRunning) CyberIce.copy(alpha = 0.8f) else CyberGold.copy(alpha = 0.75f),
                         radius = maxRadius * 0.33f,
                         center = center,
                         style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
@@ -159,28 +148,28 @@ fun CyberIceDashboard(
                 Box(
                     Modifier.size(174.dp)
                         .graphicsLayer { scaleX = pulse; scaleY = pulse }
-                        .shadow(24.dp, CircleShape, ambientColor = if (isRunning) CyberIce else Color.White, spotColor = if (isRunning) CyberIce else Color.White)
+                        .shadow(24.dp, CircleShape, ambientColor = if (isRunning) CyberIce else CyberGold, spotColor = if (isRunning) CyberIce else CyberGold)
                         .clip(CircleShape)
                         .background(
                             if (isRunning) Brush.verticalGradient(listOf(Color(0xFF22DFFF), Color(0xFF087D9B), Color(0xFF07313D)))
-                            else Brush.verticalGradient(listOf(Color(0xFF050607), Color(0xFF151719), Color(0xFF242629)))
+                            else Brush.verticalGradient(listOf(Color(0xFF542313), Color(0xFF24130F), Color(0xFF090C0E)))
                         )
-                        .border(3.dp, (if (isRunning) CyberIce else Color(0xFF73777B)).copy(alpha = 0.85f), CircleShape)
+                        .border(3.dp, (if (isRunning) CyberIce else CyberGold).copy(alpha = 0.85f), CircleShape)
                         .clickable(onClick = onToggleConnection),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("⏻", color = Color.White, fontSize = 58.sp, lineHeight = 62.sp, fontWeight = FontWeight.Light)
-                        Text(if (isRunning) "Disconnect" else "Click to Connect", color = Color.White.copy(alpha = 0.88f), fontSize = 12.sp)
+                        Text(if (isRunning) "DISCONNECT TUNNEL" else "ACTIVATE NEONNET", color = Color.White.copy(alpha = 0.92f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
                     }
                 }
             }
 
             Column(
                 Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(Color(0xFF080A0C))
-                    .border(1.dp, Color(0xFF26343C), RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(21.dp))
+                    .background(Color(0xFF10171C))
+                    .border(1.dp, CyberIce.copy(alpha = 0.24f), RoundedCornerShape(21.dp))
                     .clickable(onClick = onOpenServers)
                     .padding(horizontal = 13.dp, vertical = 10.dp)
             ) {
@@ -191,9 +180,9 @@ fun CyberIceDashboard(
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(serverName, color = CyberWhite, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("IP: $serverAddress", color = CyberMuted, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("NEON NODE  •  $serverAddress", color = CyberMuted, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    Text("▮▮▮▮", color = CyberIce, fontSize = 12.sp, letterSpacing = 1.sp)
+                    Text("◆  ◆  ◆", color = CyberIce, fontSize = 12.sp, letterSpacing = 1.sp)
                     Spacer(Modifier.width(6.dp))
                     Text(if (pingMillis > 0L) "${pingMillis}ms" else "—", color = CyberMuted, fontSize = 9.sp)
                     Spacer(Modifier.width(8.dp))
@@ -237,7 +226,7 @@ fun CyberIceDashboard(
                 Column(
                     Modifier.fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF080A0C))
+                        .background(Color(0xFF10171C))
                         .border(1.dp, Color(0xFF26343C), RoundedCornerShape(24.dp))
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(15.dp)
@@ -265,20 +254,37 @@ fun CyberIceDashboard(
         }
 
         Spacer(Modifier.height(16.dp))
-        Row(
-            Modifier.fillMaxWidth().height(58.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(Color(0xFF080A0C))
-                .border(1.dp, Color(0xFF24292D), RoundedCornerShape(32.dp))
-                .padding(horizontal = 5.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            CyberNavItem("⌂", "HOME", selectedPage == "home", onClick = onOpenHome)
-            CyberNavItem("◉", "STATS", selectedPage == "stats", onClick = onOpenStatistics)
-            CyberNavItem("◎", "SERVERS", selectedPage == "servers", onClick = onOpenServers)
-            CyberNavItem("♙", "PROFILE", selectedPage == "profile", onClick = onOpenProfile)
-        }
+        CyberBottomNavigation(
+            selectedPage = selectedPage,
+            onOpenHome = onOpenHome,
+            onOpenStatistics = onOpenStatistics,
+            onOpenServers = onOpenServers,
+            onOpenProfile = onOpenProfile
+        )
+    }
+}
+
+@Composable
+fun CyberBottomNavigation(
+    selectedPage: String,
+    onOpenHome: () -> Unit,
+    onOpenStatistics: () -> Unit,
+    onOpenServers: () -> Unit,
+    onOpenProfile: () -> Unit
+) {
+    Row(
+        Modifier.fillMaxWidth().height(58.dp)
+            .clip(RoundedCornerShape(32.dp))
+            .background(Color(0xFF080A0C))
+            .border(1.dp, Color(0xFF26343A), RoundedCornerShape(32.dp))
+            .padding(horizontal = 5.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        CyberNavItem("⌂", "HOME", selectedPage == "home", onClick = onOpenHome)
+        CyberNavItem("◉", "STATS", selectedPage == "stats", onClick = onOpenStatistics)
+        CyberNavItem("◎", "SERVERS", selectedPage == "servers", onClick = onOpenServers)
+        CyberNavItem("♙", "PROFILE", selectedPage == "profile", onClick = onOpenProfile)
     }
 }
 
@@ -316,13 +322,13 @@ private fun CyberNavItem(icon: String, label: String, selected: Boolean, onClick
     Column(
         Modifier.size(width = 62.dp, height = 48.dp)
             .clip(CircleShape)
-            .background(if (selected) Color(0xFF102B35) else Color.Transparent)
+            .background(if (selected) Color(0xFF3A2118) else Color.Transparent)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(icon, color = if (selected) CyberIce else Color(0xFFB8BEC3), fontSize = 22.sp)
-        if (label.isNotEmpty()) Text(label, color = if (selected) CyberIce else CyberMuted, fontSize = 8.sp)
+        Text(icon, color = if (selected) CyberGold else CyberMuted, fontSize = 22.sp)
+        if (label.isNotEmpty()) Text(label, color = if (selected) CyberGold else CyberMuted, fontSize = 8.sp)
     }
 }
 

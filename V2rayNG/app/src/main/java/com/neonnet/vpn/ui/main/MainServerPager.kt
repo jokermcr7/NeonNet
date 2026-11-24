@@ -1,6 +1,7 @@
 package com.neonnet.vpn.ui.main
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,8 +39,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -356,6 +359,14 @@ private fun ServerListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 5.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFF10171C))
+            .border(
+                width = if (isSelected) 1.4.dp else 1.dp,
+                color = if (isSelected) Color(0xFFFF7138) else Color(0xFF26343C),
+                shape = RoundedCornerShape(18.dp)
+            )
             .height(IntrinsicSize.Min)
             .semantics {
                 if (selectedStateDescription != null) {
@@ -377,7 +388,7 @@ private fun ServerListItem(
                             .width(4.dp)
                             .fillMaxHeight()
                             .padding(vertical = 10.dp)
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(Color(0xFFFF7138))
                     )
                 }
             }
@@ -389,13 +400,23 @@ private fun ServerListItem(
                 .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(row.remarks, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(lineBreak = LineBreak.Paragraph), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    row.remarks,
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = Color(0xFFF4F6F8),
+                        fontWeight = FontWeight.SemiBold,
+                        lineBreak = LineBreak.Paragraph
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 if (doubleColumnDisplay) {
                     IconButton(onClick = { actions.more(row.guid, row.profile) }, Modifier.size(36.dp)) {
                         Icon(
                             painterResource(R.drawable.ic_more_vert_24dp),
                             stringResource(R.string.acc_more),
-                            Modifier.size(24.dp)
+                            Modifier.size(22.dp), tint = Color(0xFF55DFFF)
                         )
                     }
                 } else {
@@ -403,21 +424,21 @@ private fun ServerListItem(
                         Icon(
                             painterResource(R.drawable.ic_share_24dp),
                             stringResource(R.string.title_configuration_share),
-                            Modifier.size(24.dp)
+                            Modifier.size(22.dp), tint = Color(0xFF55DFFF)
                         )
                     }
                     IconButton(onClick = { actions.edit(row.guid, row.profile) }, Modifier.size(36.dp)) {
                         Icon(
                             painterResource(R.drawable.ic_edit_24dp),
                             stringResource(R.string.acc_edit),
-                            Modifier.size(24.dp)
+                            Modifier.size(22.dp), tint = Color(0xFF55DFFF)
                         )
                     }
                     IconButton(onClick = { actions.remove(row.guid, row.remarks) }, Modifier.size(36.dp)) {
                         Icon(
                             painterResource(R.drawable.ic_delete_24dp),
                             stringResource(R.string.acc_delete),
-                            Modifier.size(24.dp)
+                            Modifier.size(22.dp), tint = Color(0xFF55DFFF)
                         )
                     }
                 }
@@ -429,16 +450,16 @@ private fun ServerListItem(
                         Modifier
                             .size(24.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)), Alignment.Center
+                            .background(Color(0xFFFF7138).copy(alpha = 0.18f)), Alignment.Center
                     ) {
-                        Text(row.subscriptionBadge.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(row.subscriptionBadge.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF7138))
                     }
                 }
                 Text(
                     row.statistics,
                     Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFF9BAAB4),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -449,7 +470,7 @@ private fun ServerListItem(
                     row.typeDescription,
                     modifier = Modifier.weight(1f, fill = false),
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorConfigType,
+                    color = Color(0xFF55DFFF),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -457,7 +478,7 @@ private fun ServerListItem(
                 Text(
                     testResult,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (row.testDelayMillis < 0L) colorPingRed else colorPing,
+                    color = if (row.testDelayMillis < 0L) Color(0xFFFF526B) else Color(0xFF69F0AE),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
